@@ -49,13 +49,13 @@ The exercise confirms that DHCP, by default, has no protection against this atta
 | Attacker | Kali Linux, interface `eth0`, tooling: Python 3 + Scapy |
 
 *Figure 1 — Isolation: VMnet2 configured host-only with VMware DHCP disabled.*
-![Figure 1](images/ss%201.png)
+![Figure 1](Images/ss%201%20isolation.png)
 
 *Figure 2 — Attacker VM network adapter bound to VMnet2.*
-![Figure 2](images/ss%202.png)
+![Figure 2](Images/ss%202%20.png)
 
 *Figure 3 — Lab topology (both VMs isolated on VMnet2).*
-![Figure 3](images/diagram_topology.svg)
+![Figure 3](Images/ss%2017.png)
 
 ### 3.2 Methodology
 
@@ -77,23 +77,23 @@ The exercise followed a standard engagement structure:
 A minimal Debian server was installed and configured with `isc-dhcp-server`. The server was given a static address (192.168.174.10) because a DHCP server cannot obtain its own address via DHCP. The service was configured to listen on `ens33` and to serve the small pool `.100`–`.110`.
 
 *Figure 4 — DHCP server VM created and attached to VMnet2.*
-![Figure 4](images/ss%205.png)
+![Figure 4](Images/ss%205.png)
 
 *Figure 5 — DHCP service active and running.*
-![Figure 5](images/ss%206.png)
+![Figure 5](Images/ss%206.png)
 
 *Figure 6 — Service status with a clean, single-lease baseline.*
-![Figure 6](images/ss%207.png)
+![Figure 6](Images/ss%207.png)
 
 ### 4.2 Baseline — normal operation
 
 Before attacking, normal DHCP operation was verified. The attacker VM (acting as an ordinary client) successfully obtained a lease of **192.168.174.101** from the server, completing the full DHCP four-step exchange (Discover → Offer → Request → Acknowledge, "DORA").
 
 *Figure 7 — Legitimate client obtains a valid lease (192.168.174.101) under normal conditions.*
-![Figure 7](images/ss%208.png)
+![Figure 7](Images/ss%208.png)
 
 *Figure 8 — Normal DORA exchange captured on the wire (Wireshark).*
-![Figure 8](images/ss%209.png)
+![Figure 8](Images/ss%209.png)
 
 This baseline is important: it establishes what "healthy" looks like, against which the attack's impact is measured.
 
@@ -127,20 +127,20 @@ The tool automatically stops when the server ceases to respond — i.e. when the
 Running the tool against the 11-address pool claimed every available address in seconds, each with a distinct spoofed MAC, then correctly detected exhaustion and halted:
 
 *Figure 9 — Attack tool output: nine remaining pool addresses claimed with distinct spoofed MACs, then "pool exhausted".*
-![Figure 9](images/ss%2011.png)
+![Figure 9](Images/ss%2011.png)
 
 The attack traffic on the wire shows repeated DORA cycles, each from `0.0.0.0` (client with no address) broadcasting to `255.255.255.255`:
 
 *Figure 10 — Attack flood: repeated DHCP cycles captured during the attack.*
-![Figure 10](images/ss%2012.png)
+![Figure 10](Images/ss%2012.png)
 
 The server's own lease table confirms the outcome. Every pool address is bound, and the attacker-held leases are clearly distinguishable by their **locally-administered MAC prefix (`02:`)**, whereas the two legitimate hosts retain the VMware vendor prefix (`00:0c:29:`):
 
 *Figure 11 — Post-attack lease table: pool consumed by spoofed MACs (02:xx = attacker; 00:0c:29 = legitimate hosts).*
-![Figure 11](images/ss%2013.png)
+![Figure 11](Images/ss%2013.png)
 
 *Figure 12 — Attack flow overview.*
-![Figure 12](images/diagram_attack_flow.svg)
+![Figure 12](Images/ss%2016.png)
 
 #### Business Impact
 
@@ -164,7 +164,7 @@ To confirm real impact — not merely that a tool ran — a legitimate client at
 The connection attempt failed with an explicit error stating no address could be reserved:
 
 *Figure 13 — Legitimate client denied: NetworkManager reports "no available address".*
-![Figure 13](images/ss%2014.png)
+![Figure 13](Images/ss%2014.png)
 
 This is the denial of service in plain terms: a real device, correctly requesting an address, is unable to join the network because the attack has consumed the entire pool.
 
@@ -191,7 +191,7 @@ A DHCP starvation attack produces a characteristic pattern:
 Analysis of the capture identified **297 DHCP Discover requests** and, among them, **11 unique spoofed (locally-administered) MAC addresses** — consistent with exhaustion of the 11-address pool. A single legitimate MAC was also observed issuing over 200 repeated requests, evidencing a client locked out by the attack.
 
 *Figure 14 — Detection via `tshark`: 297 Discover requests; 11 unique spoofed MACs each issuing a single Discover (the attack), plus one legitimate MAC retrying ~200 times (the impact).*
-![Figure 14](images/ss%2015.png)
+![Figure 14](Images/ss%2015.png)
 
 The detection logic, expressed as reproducible commands:
 
