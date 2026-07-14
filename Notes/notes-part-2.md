@@ -248,7 +248,7 @@ sudo macchanger -r eth0      # random new MAC (interface must be down first)
 ip a                         # look at eth0 inet line: .10x = got lease, 169.254 = failed
 ```
 
-### The fake-vs-real MAC tell (nice for the report)
+### The fake-vs-real MAC 
 
 - Fake MACs I generated start with **`02:`** (locally administered).
 - Real VMware machines start with **`00:0c:29:`** (VMware's vendor prefix).
